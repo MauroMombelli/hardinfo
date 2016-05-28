@@ -288,6 +288,11 @@ gboolean binreloc_init(gboolean try_hardcoded)
 		}
 	}
 	params.path_data = g_build_filename(tmp, "hardinfo", NULL);
+	if (!g_file_test(params.path_data, G_FILE_TEST_EXISTS)) { 
+		if ( !g_mkdir(params.path_data, 0700) ){
+			DEBUG("impossible to locate or create folder %s", tmp);
+		}
+	}
 	g_free(tmp);
 
 	tmp = gbr_find_lib_dir(PREFIX);
@@ -297,6 +302,11 @@ gboolean binreloc_init(gboolean try_hardcoded)
 		}
 	}
 	params.path_lib = g_build_filename(tmp, "hardinfo", NULL);
+	if (!g_file_test(params.path_lib, G_FILE_TEST_EXISTS)) { 
+		if ( !g_mkdir(params.path_lib, 0700) ){
+			DEBUG("impossible to locate or create folder %s", tmp);
+		}
+	}
 	g_free(tmp);
     }
 
@@ -902,11 +912,13 @@ static GSList *modules_load(gchar ** module_list)
     ShellModule *module;
     gchar *filename;
 
+    DEBUG("Going to load modules");
     filename = g_build_filename(params.path_lib, "modules", NULL);
     dir = g_dir_open(filename, 0, NULL);
     g_free(filename);
 
     if (dir) {
+	DEBUG("Dir found");
 	while ((filename = (gchar *) g_dir_read_name(dir))) {
 	    if (g_strrstr(filename, "." G_MODULE_SUFFIX) &&
 		module_in_module_list(filename, module_list) &&
@@ -916,25 +928,39 @@ static GSList *modules_load(gchar ** module_list)
 	}
 
 	g_dir_close(dir);
+    }else{
+	DEBUG("Dir not found");
     }
+    
 
-    modules = modules_check_deps(modules);
+    if (modules != NULL){
+	DEBUG("Dir end, checkinf dependency");
+	modules = modules_check_deps(modules);
+	DEBUG("Dependency check end");
+    
+    
+    
 
-    if (g_slist_length(modules) == 0) {
-	if (params.use_modules == NULL) {
-	    g_error
-		(_("No module could be loaded. Check permissions on \"%s\" and try again."),
-		 params.path_lib);
-	} else {
-	    g_error
-		(_("No module could be loaded. Please use hardinfo -l to list all avai"
-		 "lable modules and try again with a valid module list."));
+	if (g_slist_length(modules) == 0) {
+		if (params.use_modules == NULL) {
+		g_error
+			(_("No module could be loaded. Check permissions on \"%s\" and try again."),
+			params.path_lib);
+		} else {
+		g_error
+			(_("No module could be loaded. Please use hardinfo -l to list all avai"
+			"lable modules and try again with a valid module list."));
 
+		}
 	}
+	DEBUG("Going to sort modules");
+	modules_list = g_slist_sort(modules, module_cmp);
+	DEBUG("Sort end");
+	return modules_list;
+    }else{
+	return NULL;
     }
-
-    modules_list = g_slist_sort(modules, module_cmp);
-    return modules_list;
+    
 }
 
 GSList *modules_load_selected(void)
