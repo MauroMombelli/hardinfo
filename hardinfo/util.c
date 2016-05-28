@@ -282,10 +282,20 @@ gboolean binreloc_init(gboolean try_hardcoded)
 	DEBUG("done, trying to use binreloc paths.");
 
 	tmp = gbr_find_data_dir(PREFIX);
+	if (!g_file_test(tmp, G_FILE_TEST_EXISTS)) { 
+		if ( !g_mkdir(tmp, 0700) ){
+			DEBUG("impossible to locate or create folder %s", tmp);
+		}
+	}
 	params.path_data = g_build_filename(tmp, "hardinfo", NULL);
 	g_free(tmp);
 
 	tmp = gbr_find_lib_dir(PREFIX);
+	if (!g_file_test(tmp, G_FILE_TEST_EXISTS)) { 
+		if ( !g_mkdir(tmp, 0700) ){
+			DEBUG("impossible to locate or create folder %s", tmp);
+		}
+	}
 	params.path_lib = g_build_filename(tmp, "hardinfo", NULL);
 	g_free(tmp);
     }
